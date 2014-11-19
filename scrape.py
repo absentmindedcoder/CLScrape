@@ -1,5 +1,5 @@
 import urllib2
-import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import time
 import socket
@@ -7,8 +7,12 @@ import socket
 def stripNonASCII(text):
     return ''.join([i if ord(i) < 128 else '' for i in text])
 
-def scrape(path, filter, sites):
+def scrape(path, filter, sites, days):
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
     results = {}
+    today = datetime.now()
+    pastDate = today - timedelta(days=days)
     for s in sites:
         print(s + " scrape has begun..." + '\r')
 	
@@ -22,7 +26,9 @@ def scrape(path, filter, sites):
         urls = []
         
         for post in posts:
-            if str(datetime.datetime.now().day) in post.select('time')[0]['datetime'] or str(datetime.datetime.now().day-1) in post.select('time')[0]['datetime']:
+            print(post.select('time')[0]['datetime'])
+            postDay = datetime.strptime(post.select('time')[0]['datetime'].split(' ')[0], '%Y-%m-%d')
+            if postDay >= pastDate and postDay <= today:
                 urls.append(post.select('a')[0])
 
         for url in urls:
@@ -54,20 +60,21 @@ sites = ['http://boston.craigslist.org',
 'http://nwct.craigslist.org',
 'http://providence.craigslist.org']
 
-FAIL = '\033[91m'
-ENDC = '\033[0m'
-
 searches = [
     {'url': '/search/cta?query=rs&srchType=T&minAsk=&maxAsk=6000&hasPic=1&autoMinYear=1999&autoMaxYear=2001&autoMakeModel=', 'item': 'subaru'},
     {'url': '/search/cta?query=miata&srchType=T&hasPic=1&maxAsk=5000&autoMaxYear=1997', 'item': 'miata'}
     ]
+    
+days = 2
 
-fl = open('./results.html', 'w+')
+resultsPath = './results.html'
+
+fl = open(resultsPath, 'w+')
 fl.write('<html><body>')
 results = {}
 
 for search in searches:
-    results.update(scrape(search['url'], search['item'], sites))
+    results.update(scrape(search['url'], search['item'], sites, days))
 
 
 for k, v in results.iteritems():
