@@ -26,7 +26,6 @@ def scrape(path, filter, sites, days):
         urls = []
         
         for post in posts:
-            print(post.select('time')[0]['datetime'])
             postDay = datetime.strptime(post.select('time')[0]['datetime'].split(' ')[0], '%Y-%m-%d')
             if postDay >= pastDate and postDay <= today:
                 urls.append(post.select('a')[0])
