@@ -3,23 +3,30 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import time
 import socket
+import sys
 
 def stripNonASCII(text):
     return ''.join([i if ord(i) < 128 else '' for i in text])
 
-def scrape(path, filter, sites, days):
+def scrape(path, filter, sites, days, fullLog):
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     results = {}
     today = datetime.now()
     pastDate = today - timedelta(days=days)
-    for s in sites:
-        print(s + " scrape has begun..." + '\r')
+    
+    if not showAll:
+        print('Scraping for term ' + filter + ' has started')
+        
+    for idx, s in enumerate(sites, start=1):
+        
+        if showAll:
+            print(s + " scrape has begun..." + '\r')
 	
         try:
             soup = BeautifulSoup(urllib2.urlopen(s + path).read())
         except:
-            print(FAIL + s + ' has timed out!' + ENDC)
+            print(FAIL + s + ' has timed out for search on: ' + filter + ' !' + ENDC)
             continue
 
         posts = soup.select('.pl')
@@ -34,11 +41,13 @@ def scrape(path, filter, sites, days):
             if('craigslist' not in url.get('href') and (filter in url.string.lower())):
                 results[url.string] = s + url.get('href')
         
-        print(s + " has been scraped. Waiting to start next URL..." + '\r')
+        if showAll:
+            print(s + " has been scraped for " + filter + ". Waiting to start next URL..." + '\r')
+        else:
+            print('Percent complete: ' + "{0:.2f}".format((float(idx) / float(len(sites))) * 100) + '%')
 
-        time.sleep(2)
-
-    print('Total Results for ' + filter + ': ' + str(len(results)))
+        if idx != len(sites):
+            time.sleep(2)
 
     return results
 
@@ -72,9 +81,19 @@ fl = open(resultsPath, 'w+')
 fl.write('<html><body>')
 results = {}
 
-for search in searches:
-    results.update(scrape(search['url'], search['item'], sites, days))
+stats = []
+showAll = False
 
+if len(sys.argv) > 1:
+    showAll = sys.argv[1] == '-a'
+
+for search in searches:
+    result = scrape(search['url'], search['item'], sites, days, showAll)
+    stats.append({'name': search['item'], 'total': str(len(result))})
+    results.update(result)
+
+for item in stats:
+    print('Total Results for ' + item['name'] + ': ' + item['total'])
 
 for k, v in results.iteritems():
         fl.write('<a target="_blank" href="' + v + '">' + stripNonASCII(k) + '</a>' + '<br>')
