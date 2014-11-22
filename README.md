@@ -21,6 +21,9 @@ How to run
 
 `python scrape.py`
 
+Optional params:
+* `-a` - outputs each site being scraped instead of a percentage 
+
 Licence
 ========
 Open Source Initiative OSI - The MIT License
